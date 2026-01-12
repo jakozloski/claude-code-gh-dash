@@ -2,7 +2,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Bash(gh pr create*)",
+        "matcher": "Bash(gh pr create:*)",
         "hooks": [
           {
             "type": "prompt",

@@ -1,7 +1,7 @@
 ---
 description: Display GitHub PR status dashboard with CI/CD checks and merge capability
 argument-hint: "[pr-number] [--merge [squash|merge|rebase]]"
-allowed-tools: Bash(gh:*), Bash(git:*)
+allowed-tools: Bash(gh:*), Bash(git:*), Bash(sleep:*)
 ---
 
 # GitHub PR Dashboard
@@ -102,13 +102,31 @@ If $ARGUMENTS contains `--merge`:
 - `gh pr merge --merge` (if "merge" specified)
 - `gh pr merge --rebase` (if "rebase" specified)
 
-## Step 8: Live Updates
+## Step 8: Live Updates (CRITICAL - Must Implement Polling Loop)
 
-If any checks are pending/running:
-1. Show dashboard
-2. Show: `⏳ Refreshing in 10s... (Ctrl+C to stop)`
-3. Wait 10 seconds, re-fetch, redisplay
-4. Repeat until all checks complete
+**After displaying the dashboard**, check if ANY status check in `statusCheckRollup` has a state of: `PENDING`, `QUEUED`, `IN_PROGRESS`, or `RUNNING` (case-insensitive).
+
+**If checks are still running, you MUST implement this polling loop:**
+
+```
+LOOP (up to 60 iterations / 10 minutes max):
+  1. Display the dashboard
+  2. Output exactly: "⏳ Refreshing in 10s... (Ctrl+C to stop)"
+  3. Run: sleep 10
+  4. Re-fetch PR data with: gh pr view --json number,title,state,baseRefName,headRefName,mergeable,reviewDecision,url,statusCheckRollup,reviews,comments,additions,deletions,changedFiles
+  5. Check statusCheckRollup again:
+     - If ANY check still has PENDING/QUEUED/IN_PROGRESS/RUNNING → continue loop
+     - If ALL checks have terminal states (SUCCESS/FAILURE/ERROR/SKIPPED/CANCELLED/NEUTRAL) → exit loop
+  6. Go to step 1
+END LOOP
+```
+
+**Important:**
+- Do NOT stop after showing the dashboard once - you MUST continue polling while checks are running
+- Use `sleep 10` bash command to wait between refreshes
+- The loop must continue until ALL checks reach a terminal state, not just some of them
+- Maximum 60 iterations (10 minutes) to prevent infinite loops
+- When loop ends, show final dashboard with: "✅ All checks complete!" or "⏱️ Timeout - checks still running after 10 minutes"
 
 ## Edge Cases
 
