@@ -102,31 +102,54 @@ If $ARGUMENTS contains `--merge`:
 - `gh pr merge --merge` (if "merge" specified)
 - `gh pr merge --rebase` (if "rebase" specified)
 
-## Step 8: Live Updates (CRITICAL - Must Implement Polling Loop)
+## Step 8: Live Updates - MANDATORY POLLING LOOP
 
-**After displaying the dashboard**, check if ANY status check in `statusCheckRollup` has a state of: `PENDING`, `QUEUED`, `IN_PROGRESS`, or `RUNNING` (case-insensitive).
+⚠️ **THIS STEP IS NOT OPTIONAL - YOU MUST IMPLEMENT THE POLLING LOOP**
 
-**If checks are still running, you MUST implement this polling loop:**
+After displaying the dashboard, you MUST check if ANY status check in `statusCheckRollup` has a state of: `PENDING`, `QUEUED`, `IN_PROGRESS`, or `RUNNING` (case-insensitive).
+
+**DO NOT STOP YOUR RESPONSE** if checks are still running. You must continue polling.
+
+### Polling Algorithm (MANDATORY when checks are running):
 
 ```
-LOOP (up to 60 iterations / 10 minutes max):
-  1. Display the dashboard
-  2. Output exactly: "⏳ Refreshing in 10s... (Ctrl+C to stop)"
-  3. Run: sleep 10
-  4. Re-fetch PR data with: gh pr view --json number,title,state,baseRefName,headRefName,mergeable,reviewDecision,url,statusCheckRollup,reviews,comments,additions,deletions,changedFiles
-  5. Check statusCheckRollup again:
-     - If ANY check still has PENDING/QUEUED/IN_PROGRESS/RUNNING → continue loop
-     - If ALL checks have terminal states (SUCCESS/FAILURE/ERROR/SKIPPED/CANCELLED/NEUTRAL) → exit loop
-  6. Go to step 1
-END LOOP
+iteration = 0
+max_iterations = 60
+
+WHILE iteration < max_iterations:
+  1. Display the dashboard (Step 2 format)
+
+  2. Check statusCheckRollup states:
+     - Count checks with states: PENDING, QUEUED, IN_PROGRESS, RUNNING
+     - If count == 0 → BREAK (all checks complete)
+
+  3. Output: "⏳ Refreshing in 10s... (Ctrl+C to stop)"
+
+  4. Execute: sleep 10
+
+  5. Re-fetch PR data:
+     gh pr view --json number,title,state,baseRefName,headRefName,mergeable,reviewDecision,url,statusCheckRollup,reviews,comments,additions,deletions,changedFiles
+
+  6. iteration = iteration + 1
+
+  7. CONTINUE to step 1
+
+END WHILE
 ```
 
-**Important:**
-- Do NOT stop after showing the dashboard once - you MUST continue polling while checks are running
-- Use `sleep 10` bash command to wait between refreshes
-- The loop must continue until ALL checks reach a terminal state, not just some of them
-- Maximum 60 iterations (10 minutes) to prevent infinite loops
-- When loop ends, show final dashboard with: "✅ All checks complete!" or "⏱️ Timeout - checks still running after 10 minutes"
+### Exit Conditions:
+- **Success**: All checks have terminal states → Output: "✅ All checks complete!"
+- **Timeout**: 60 iterations reached → Output: "⏱️ Timeout - checks still running after 10 minutes"
+
+### CRITICAL REQUIREMENTS:
+
+1. **DO NOT END YOUR RESPONSE** after showing the dashboard once if checks are pending
+2. **DO NOT ASK THE USER** if they want to continue polling - just do it
+3. **EXECUTE `sleep 10`** between each refresh - this is a real bash command
+4. **KEEP LOOPING** until ALL checks reach terminal states (SUCCESS/FAILURE/ERROR/SKIPPED/CANCELLED/NEUTRAL)
+5. **RE-FETCH DATA** on every iteration - do not reuse stale data
+
+The polling loop is the core feature of this dashboard. Stopping early defeats the purpose.
 
 ## Edge Cases
 

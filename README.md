@@ -113,9 +113,13 @@ gh auth login
 | 📊 | Coverage reports |
 | ▲ | Vercel |
 
-## Auto-trigger Hook (Optional)
+## Auto-trigger Hook
 
-To automatically show the dashboard after creating a PR, add this hook to your project's `.claude/settings.json`:
+The plugin includes a PostToolUse hook that automatically suggests running the PR dashboard after creating a PR with `gh pr create`.
+
+The hook is located at `hooks/hooks.json` and uses a shell script (`hooks/pr-trigger.sh`) to detect when a PR is created.
+
+**Note:** If using the plugin via `--plugin-dir`, the hook is automatically loaded. If you want to add it manually to your project, add to `.claude/settings.json`:
 
 ```json
 {
@@ -134,6 +138,8 @@ To automatically show the dashboard after creating a PR, add this hook to your p
   }
 }
 ```
+
+**Requires:** `jq` for JSON parsing (`brew install jq`)
 
 ## License
 

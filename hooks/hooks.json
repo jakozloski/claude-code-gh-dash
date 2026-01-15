@@ -2,11 +2,11 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Bash(gh pr create:*)",
+        "matcher": "Bash",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "A PR was just created. Now run /gh-dash:pr to display the PR dashboard with status, CI/CD checks, and live updates."
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pr-trigger.sh"
           }
         ]
       }
